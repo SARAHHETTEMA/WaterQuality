@@ -483,6 +483,13 @@ sc_code = '00095'
 # make this data easier to read. 
 
 
+site_nos <- gsub('USGS-','',focus_sites$sites)
+
+sc <- readNWISdv(siteNumbers = site_nos,
+                 parameterCd = sc_code,
+                 startDate = '2007-01-01',
+                 endDate = '2024-03-20') %>%
+  renameNWISColumns()
 
 
 ```
