@@ -1,6 +1,3 @@
-
-
-
 ---
 title: "Tidying Public Water Quality Data"
 author: "Matthew Ross"
@@ -12,22 +9,42 @@ output:
     toc_float: true
 editor_options: 
   chunk_output_type: console
+  markdown: 
+    wrap: 72
 ---
-
-
 
 # Why public datasets?
 
-Working with large, open-access datasets can serve many purposes. It can be an excellent way to explore new ideas, before investing in field-work or experiments. It can be a great way to take local or experimental results and expand them to different ecosystems, places, or landscapes. Or it can be an excellent way to build, validate, and test ecological models on regional or national scales. 
+Working with large, open-access datasets can serve many purposes. It can
+be an excellent way to explore new ideas, before investing in field-work
+or experiments. It can be a great way to take local or experimental
+results and expand them to different ecosystems, places, or landscapes.
+Or it can be an excellent way to build, validate, and test ecological
+models on regional or national scales.
 
-So why doesn't everyone use public data? Well, it's often collected by a variety of organizations, with different methods, units, and incosistent metadata. Together these issues with large public datasets, make them "messy." Messy data can be messy in many different ways, but at the basic level it means that data is hard to analyze, not because the data itself is bad, but because the way it is organized is unclear or inconsistent. 
+So why doesn't everyone use public data? Well, it's often collected by a
+variety of organizations, with different methods, units, and incosistent
+metadata. Together these issues with large public datasets, make them
+"messy." Messy data can be messy in many different ways, but at the
+basic level it means that data is hard to analyze, not because the data
+itself is bad, but because the way it is organized is unclear or
+inconsistent.
 
-In this lab, we will learn some tricks to "tidying" data, making it analysis-ready. We will depend heavily on the [tidyverse](https://www.tidyverse.org/), an excellent series of packages that make data manipulation beautiful and easy. We will also be working with water quality portal data so we will also use the excellent [dataRetrieval](https://github.com/USGS-R/dataRetrieval) package for downloading data from the Water Quality Portal and the USGS. 
+In this lab, we will learn some tricks to "tidying" data, making it
+analysis-ready. We will depend heavily on the
+[tidyverse](https://www.tidyverse.org/), an excellent series of packages
+that make data manipulation beautiful and easy. We will also be working
+with water quality portal data so we will also use the excellent
+[dataRetrieval](https://github.com/USGS-R/dataRetrieval) package for
+downloading data from the Water Quality Portal and the USGS.
 
 ## Loading key packages
 
-This lab is meant to introduce the incredible variety of tools that one can use to clean data, many of these tools are captured by the `tidyverse` meta-package, a package of packages, but there are some additional ones that will help us locate our various water quality sites. 
-
+This lab is meant to introduce the incredible variety of tools that one
+can use to clean data, many of these tools are captured by the
+`tidyverse` meta-package, a package of packages, but there are some
+additional ones that will help us locate our various water quality
+sites.
 
 ```{r setup, warnings='hide',message=FALSE}
 library(tidyverse) # Package with dplyr, tibble, readr, and others to help clean coding
@@ -48,10 +65,16 @@ library(tidyr) #Makes multiple simultaneous models easier
 
 # Downloading data.
 
-For this lab, we'll explore water quality data in the Colorado River basin as it moves from Colorado to Arizona. All data will be generated through the code you see below, with the only external information coming from knowing the SiteID's for the monitoring locations along the Colorado River and the water quality characteristic names. 
+For this lab, we'll explore water quality data in the Colorado River
+basin as it moves from Colorado to Arizona. All data will be generated
+through the code you see below, with the only external information
+coming from knowing the SiteID's for the monitoring locations along the
+Colorado River and the water quality characteristic names.
 
-
-The water quality portal can be accessed with the command `readWQPdata`, which takes a variety of parameters (like startdate, enddate, constituents, etc...). We'll generate these rules for downloading the data here. 
+The water quality portal can be accessed with the command `readWQPdata`,
+which takes a variety of parameters (like startdate, enddate,
+constituents, etc...). We'll generate these rules for downloading the
+data here.
 
 ## Download prep
 
@@ -103,8 +126,10 @@ site.args <- list(siteid=colorado$sites,
 
 ## Concentration data download
 
-Now that we have generated the commands to download the data, the code to download the data is here, but it is not run on purpose because it takes 15 minutes or so to run everytime. You can always run it yourself by setting `eval=T`. 
-
+Now that we have generated the commands to download the data, the code
+to download the data is here, but it is not run on purpose because it
+takes 15 minutes or so to run everytime. You can always run it yourself
+by setting `eval=T`.
 
 ```{r concentration download}
 conc.list <- list() #Empty list to hold each data download
@@ -138,7 +163,9 @@ conc.long <- map_dfr(conc.list,rbind)
 
 ## Site info download
 
-We also need to download some site info so we can know where these sites are. 
+We also need to download some site info so we can know where these sites
+are.
+
 ```{r site info download}
 #In addition to concentration informatino, we probably want to know some things about the sites
 #dplyr::select can help us only keep site information that is useful. 
@@ -155,20 +182,24 @@ site.info <- whatWQPsites(siteid=colorado$sites) %>%
 
 ```
 
-
 # Data tidying
 
-Now that we have downloaded the data we need to tidy it up. The water quality portal data comes with an incredible amount of metadata in the form of extra columns. But we don't need all this extra data. 
-## Look at the data you downloaded.
+Now that we have downloaded the data we need to tidy it up. The water
+quality portal data comes with an incredible amount of metadata in the
+form of extra columns. But we don't need all this extra data. \## Look
+at the data you downloaded.
 
-There are two data types we downloaded. First site info which has things like lat and long, and second concentration data. We already slightly tidied the site info data so that it has sensible column names 
+There are two data types we downloaded. First site info which has things
+like lat and long, and second concentration data. We already slightly
+tidied the site info data so that it has sensible column names
 
 ```{r site info}
 
 head(site.info)
 ```
 
-This dataset looks nice because it has all the information we need and nothing extra. Now let's look at the concentration data. 
+This dataset looks nice because it has all the information we need and
+nothing extra. Now let's look at the concentration data.
 
 ```{r conc data}
 head(conc.long) %>%
@@ -178,10 +209,11 @@ head(conc.long) %>%
   
 ```
 
-
 ## Initial cleaning up
 
-Wow that looks messy! Lots of extraneous columns, lots of NAs, so much information we can hardly parse it. Let's pair it down to the essentials. 
+Wow that looks messy! Lots of extraneous columns, lots of NAs, so much
+information we can hardly parse it. Let's pair it down to the
+essentials.
 
 ```{r tidying up concentration}
 #This code mostly just grabs and renames the most important data columns
@@ -210,7 +242,8 @@ conc.clean <-  conc.long %>%
 
 ```
 
-Now let's look at the tidier version 
+Now let's look at the tidier version
+
 ```{r examine tidier data}
 head(conc.long) %>%
   kable(.,'html') %>%
@@ -220,7 +253,12 @@ head(conc.long) %>%
 
 ## Final tidy dataset
 
-Okay that is getting better but we still have lots of extraneous information. For our purposes let's assume that the sample and analytical methods used by the USGS are reasonable and exchangeable (one method is equivalent to the other). If we make that assumption then the only remaining data we need to clean is to make sure that all the data has the same units. 
+Okay that is getting better but we still have lots of extraneous
+information. For our purposes let's assume that the sample and
+analytical methods used by the USGS are reasonable and exchangeable (one
+method is equivalent to the other). If we make that assumption then the
+only remaining data we need to clean is to make sure that all the data
+has the same units.
 
 ### Unit Check
 
@@ -230,7 +268,9 @@ table(conc.clean$units)
 
 All the data is in mg/L!
 
-We just need to remove these observations with a `dplyr::filter` call and then select an even smaller subset of useful columns, while adding a time object column using the `lubridate::ymd` call. 
+We just need to remove these observations with a `dplyr::filter` call
+and then select an even smaller subset of useful columns, while adding a
+time object column using the `lubridate::ymd` call.
 
 ```{r tidy}
 conc.tidy <- conc.clean %>% 
@@ -245,7 +285,10 @@ conc.tidy <- conc.clean %>%
 
 ### Daily data
 
-Okay now we have a manageable data frame. But how do we want to organize the data? Since we are looking at a really long time-series of data (70 years), let's look at data as a daily average. The `dplyr::group_by and summarize` commands make this really easy
+Okay now we have a manageable data frame. But how do we want to organize
+the data? Since we are looking at a really long time-series of data (70
+years), let's look at data as a daily average. The
+`dplyr::group_by and summarize` commands make this really easy
 
 ```{r daily}
 
@@ -259,16 +302,22 @@ conc.daily <- conc.tidy %>%
 
 ```
 
-Taking daily averages looks like it did eliminate `r nrow(conc.tidy) - nrow(conc.daily)` observations, meaning these site date combinations had multiple observations on the same day. 
-
+Taking daily averages looks like it did eliminate
+`r nrow(conc.tidy) - nrow(conc.daily)` observations, meaning these site
+date combinations had multiple observations on the same day.
 
 # Analyzing data
 
-Now we have a 'tidy' dataset. Let's look at the data we have. First where is the data? 
+Now we have a 'tidy' dataset. Let's look at the data we have. First
+where is the data?
 
 ### Map
 
-Here we use the `sf` package to project the site information data into a GIS type data object called a `simple feature (sf)`. The function `st_as_sf` converts the long (x) and lat (y) coordinates into a projected point feature with the EPSG code 4326 (WGS 84). We can then use the `mapview` package and function to look at where these sites are. 
+Here we use the `sf` package to project the site information data into a
+GIS type data object called a `simple feature (sf)`. The function
+`st_as_sf` converts the long (x) and lat (y) coordinates into a
+projected point feature with the EPSG code 4326 (WGS 84). We can then
+use the `mapview` package and function to look at where these sites are.
 
 ```{r}
 #convert site info as an sf object
@@ -280,16 +329,17 @@ mapview(site.sf )
 
 ```
 
-So these sites are generally in the Colorado River Basin with increasing size. 
+So these sites are generally in the Colorado River Basin with increasing
+size.
 
 ## Concentration data
 
-Now that we know where the data is coming from let's look at the actual data we downloaded using ggplot2 
-
+Now that we know where the data is coming from let's look at the actual
+data we downloaded using ggplot2
 
 ### Calcium only
 
-To keep the plots simple at first let's look at calcium data by site. 
+To keep the plots simple at first let's look at calcium data by site.
 
 ```{r daily plot}
 conc.daily %>%
@@ -300,11 +350,13 @@ conc.daily %>%
   
 ```
 
-Okay that's a lot of data! Maybe too much. Let's focus in on sites with only continuous datasets and then summarize the data by year
+Okay that's a lot of data! Maybe too much. Let's focus in on sites with
+only continuous datasets and then summarize the data by year
 
 ### Annual summaries of full sites
 
-Let's shrink the dataset to only look at annual change. 
+Let's shrink the dataset to only look at annual change.
+
 ```{r annual only}
 too.few.years <- c('USGS-09034500','USGS-0907110','USGS-0908500')
 
@@ -329,11 +381,16 @@ conc.annual %>%
 
 That plot is... ugly! Maybe we can make something prettier
 
+### Prettier annual plot.
 
-### Prettier annual plot. 
-
-Having the points colored by SiteID is not super useful, unless you have memorized the name and location of USGS gauge data. So maybe we can color it by the table we used to download the data? That table `colorado` was organized such that each basin had it's own name or was increasing in basin size. That's a better way to think about the data than as SiteID names. So let's use `join` functions to join the datasets and use the basin names. We'll also use the package `ggthemes` to try and make the plots prettier. 
-
+Having the points colored by SiteID is not super useful, unless you have
+memorized the name and location of USGS gauge data. So maybe we can
+color it by the table we used to download the data? That table
+`colorado` was organized such that each basin had it's own name or was
+increasing in basin size. That's a better way to think about the data
+than as SiteID names. So let's use `join` functions to join the datasets
+and use the basin names. We'll also use the package `ggthemes` to try
+and make the plots prettier.
 
 ```{r pretty,fig.width=9,fig.height=7}
 conc.annual %>%
@@ -351,7 +408,9 @@ conc.annual %>%
 
 ### Watershed size
 
-Many prior publications have shown that increasing watershed size means decreasing variance in anion and cation concentrations. We can use our dataset to test this in the colorado basin. 
+Many prior publications have shown that increasing watershed size means
+decreasing variance in anion and cation concentrations. We can use our
+dataset to test this in the colorado basin.
 
 ```{r}
 conc.annual %>%
@@ -365,11 +424,18 @@ conc.annual %>%
   theme(legend.position=c(.7,.15)) 
 ```
 
-Cool! Looks like it's generally true across all constituents. Potassium has low variance. Why? No clue!
+Cool! Looks like it's generally true across all constituents. Potassium
+has low variance. Why? No clue!
 
 ## Reshaping the data
 
-From basic weathering geochemistry principles we know that Bicarbonate concentrations should be correlated with Mg and Ca depending on the weathering reactions that generate these river signals. The current shape of the data in a 'long' format makes looking at these correlations impossible. So we want to 'widen' the data so the parameters are arranged in side by side columns. This is really easy with tidyr `spread` and `gather`!
+From basic weathering geochemistry principles we know that Bicarbonate
+concentrations should be correlated with Mg and Ca depending on the
+weathering reactions that generate these river signals. The current
+shape of the data in a 'long' format makes looking at these correlations
+impossible. So we want to 'widen' the data so the parameters are
+arranged in side by side columns. This is really easy with tidyr
+`spread` and `gather`!
 
 ```{r}
 head(conc.annual)
@@ -386,16 +452,16 @@ ggplot(conc.wide,aes(x=Bicarbonate,y=`Mg+Ca`,color=SiteID)) +
 
 ```
 
-
 ## Model changes
 
-It looks to me like there might be some trends in the data at certain sites. (Mg and SO4 in particular). Let's use some advanced r to check if there are some linear trends in these datasets. 
-
+It looks to me like there might be some trends in the data at certain
+sites. (Mg and SO4 in particular). Let's use some advanced r to check if
+there are some linear trends in these datasets.
 
 ### Nesting and modelling
 
-There is a really excellent package called purrr and tidyr make doing multiple models on different sites really easy. Quick example here
-
+There is a really excellent package called purrr and tidyr make doing
+multiple models on different sites really easy. Quick example here
 
 ```{r}
 
@@ -406,7 +472,10 @@ conc.nest <- conc.annual %>%
 head(conc.nest)
 ```
 
-That nests or wraps up the data into tidy little bundles. We can access these bundled datasets by using a map function that applies a model *inside* a bundle. 
+That nests or wraps up the data into tidy little bundles. We can access
+these bundled datasets by using a map function that applies a model
+*inside* a bundle.
+
 ```{r}
 #Create a generic model function (mean as a function of time)
 time.lm.models <- function(x){
@@ -419,7 +488,9 @@ conc.models <- conc.nest %>%
 
 ```
 
-Now we have an individual time-series analysis model for each site and parameter combination. But how do we see the results in a tidy way? Broom to the rescue!
+Now we have an individual time-series analysis model for each site and
+parameter combination. But how do we see the results in a tidy way?
+Broom to the rescue!
 
 ```{r}
 conc.models %>%
@@ -434,45 +505,48 @@ conc.models %>%
 
 ```
 
-
-Cool! Lots of these constituents have significant trends. Many of them are declining, why? what does that mean for water quality? I don't know. But we could probably use more public data to investigate. 
+Cool! Lots of these constituents have significant trends. Many of them
+are declining, why? what does that mean for water quality? I don't know.
+But we could probably use more public data to investigate.
 
 # Assignment
 
-The above code is... voluminous! But the goal was to show you the full pipeline of 
-downloading, cleaning, harmonizing, analyzing, and displaying public water quality
-data. For this assignment you will continue to build out your own ability to 
-analyze large complex data. 
+The above code is... voluminous! But the goal was to show you the full
+pipeline of downloading, cleaning, harmonizing, analyzing, and
+displaying public water quality data. For this assignment you will
+continue to build out your own ability to analyze large complex data.
 
 ## Background
 
-The reason so many of these sites in Colorado have lots of chemical concentration
-data is because the Colorado River is a highly critical resource throughout 
-the Western USA, but it has suffered from impaired water quality, specifically
-increases in ion concentration leading to high levels of salinity. This is particularly
-true in the Gunnison River. This occurs both because the bedrock is full of readily
-weathered ions, and because irrigation practices artificially elevate weathering rates
-(more water = more ions released). As such the Gunnison River has a salinity
-control plan (https://gunnisonriverbasin.org/water-quality/salinity-control/).
+The reason so many of these sites in Colorado have lots of chemical
+concentration data is because the Colorado River is a highly critical
+resource throughout the Western USA, but it has suffered from impaired
+water quality, specifically increases in ion concentration leading to
+high levels of salinity. This is particularly true in the Gunnison
+River. This occurs both because the bedrock is full of readily weathered
+ions, and because irrigation practices artificially elevate weathering
+rates (more water = more ions released). As such the Gunnison River has
+a salinity control plan
+(<https://gunnisonriverbasin.org/water-quality/salinity-control/>).
 
-For this assignment you will be exploring changes in Salinity in the Gunnison River,
-Dolores River, and the Colorado River above and below where these two rivers 
-join the CO River (all of this is near Grand Junction). The main questions we have are:
+For this assignment you will be exploring changes in Salinity in the
+Gunnison River, Dolores River, and the Colorado River above and below
+where these two rivers join the CO River (all of this is near Grand
+Junction). The main questions we have are:
 
-1) What are trends in specific conductivity(salinity) in these three rivers since 2007?
+1)  What are trends in specific conductivity(salinity) in these three
+    rivers since 2007?
 
-2) What is the correlation between specific conductivity and individual ion concentration?
+2)  What is the correlation between specific conductivity and individual
+    ion concentration?
 
-3) How does discharge control these relationships? 
-
+3)  How does discharge control these relationships?
 
 ## Q1) What are trends in Specific Conductivity?
 
-
-### Download Spec Cond Data for our Focus Sites. 
+### Download Spec Cond Data for our Focus Sites.
 
 ```{r}
-
 
 focus_sites <- colorado <- tibble(sites=c('USGS-09095500','USGS-09152500',
                            'USGS-09180000','USGS-09180500'),
@@ -480,148 +554,188 @@ focus_sites <- colorado <- tibble(sites=c('USGS-09095500','USGS-09152500',
                            'dolores','colorado_below'))
 
 sc_code = '00095'
+
 # You will need to use readNWISdv function to download daily spec cond data 
 # for these sites. Data starts in 2007. Pay attention to how that function
 # differs from readWQPdata. Consider also using the renameNWIScolumns funciton to 
 # make this data easier to read. 
+updated_sites <- gsub('USGS-', '', focus_sites$sites)
+print(updated_sites)
+start <- '2007-01-01'
+present <- '2024-03-20'
 
-
-site_nos <- gsub('USGS-','',focus_sites$sites)
-
-sc <- readNWISdv(siteNumbers = site_nos,
-                 parameterCd = sc_code,
-                 startDate = '2007-01-01',
-                 endDate = '2024-03-20') %>%
-  renameNWISColumns()
-
-
+daily_spec_cond <- readNWISdv(updated_sites, sc_code, start, present) %>%  renameNWISColumns()
+names(daily_spec_cond)
 ```
-
-
 
 ### Summarize the daily data to annual means for lower flow periods (July/Aug/Sept/Oct)
 
-Salinity is primarily an issue during low flow periods so when we are looking for 
-trends we want to focus on the saltiest times of year, generally July-Oct. 
+Salinity is primarily an issue during low flow periods so when we are
+looking for trends we want to focus on the saltiest times of year,
+generally July-Oct.
 
 ```{r}
 #Group_by, filter, and summarize will be key here. 
+spec_con_low <- daily_spec_cond %>%
+  mutate(Month = month(Date), year = year(Date)) %>%
+  filter(Month %in% c(7, 8, 9, 10))
 
-sc_summers <- sc %>%
-  #add month columns
-  mutate(month = month(Date),
-         year = year(Date)) %>%
-  #filter to only those summer months
-  filter(month %in% c(7,8,9,10)) %>%
-  #group by sites and years to take site and year averages
-  group_by(site_no, year) %>%
-  # Take the mean, removing NAs and add a count of obs to make sure
-  # our summer annual mean represents a good amount of data
-  summarize(summer_sc = mean(SpecCond,na.rm = T),
-            count = n())
+low_summary <- spec_con_low %>%
+  group_by(agency_cd, site_no, year) %>%
+  summarize(Annual_Mean_SpecCond = mean(SpecCond, na.rm = TRUE), count = n())
 
+print(low_summary)
+```
 
-
-## Add a visual check. 
-
-ggplot(sc_summers, aes(x = year, y = summer_sc,
-                       color = site_no)) + 
+```{r}
+ggplot(low_summary, aes(x = year, y = Annual_Mean_SpecCond, color = site_no)) + 
   geom_point() + 
   theme_few() + 
   scale_color_few() + 
   theme(legend.position = c(.2,.8))
-
-# What's wrong with this site? 
 ```
 
 ### Using the `map` code from above test if their are trends
 
-To do this correctly you need to use a "sens.slope" test which is a non-parametric
-test for trends in data from the `trend` package, which you will need to install and load
+To do this correctly you need to use a "sens.slope" test which is a
+non-parametric test for trends in data from the `trend` package, which
+you will need to install and load
 
 ```{r}
+spec_con.nest <- low_summary %>%
+  group_by(site_no, year) %>%
+  summarize(mean = mean(Annual_Mean_SpecCond)) %>%
+  nest() 
 
-### Straight from Sam Struthers with MR modifications
-library(trend) # Library with sens.slope package
-
-#Custom sens slope function and output guidance
-my_sens <- function(df){
-  mod <- sens.slope(df$summer_sc)
-  
-    #Extract the things we want
-    #if there is a trend (p.value),
-    # what is the slope? 
-  tibble(slope = mod$estimates,
-         p_value = mod$p.value)
-}
-
-
-sc_results <- sc_summers %>%
-  group_by(site_no) %>%
-  #Bundle the data
-  nest() %>%
-  #Apply the model
-  mutate(mods=map(data,my_sens)) %>%
-  # Extract model results
-  unnest(cols = mods) %>%
-  #remove data
-  select(-data) %>%
-  #Join back to site names
-  #First need to add sites with USGS - in front
-  mutate(sites = paste0('USGS-',site_no)) %>%
-  inner_join(focus_sites)
-
-kable(sc_results)
-
-
+head(spec_con.nest)
 ```
 
+```{r}
+#Create a generic model function (mean as a function of time)
+library(trend)
+sens_slope_mod <- function(x){
+  mod <- sens.slope(x = x$mean) %>%
+    tidy()
+}
+
+spec_con.models <- spec_con.nest %>%
+  mutate(mods=map(data, sens_slope_mod)) %>% 
+  unnest(cols = mods) %>%
+  select(-data) %>%
+  mutate(sites = paste0('USGS-', site_no)) %>% 
+  inner_join(focus_sites)
+```
+
+```{r echo=TRUE}
+kable(spec_con.models)
+```
 
 ## Q2) 2) What is the correlation between specific conductivity and individual ion concentration?
 
+### Join `conc.daily` to your specific conductance `sc` data
+
 ```{r}
 # Think about if you want a full join, inner join, left join, etc...
-
-
-sc_ions <- sc %>%
-  ## Add a new siteid column so it matches conc.daily
-  mutate(SiteID = paste0('USGS-',site_no)) %>% 
-  inner_join(focus_sites, by = join_by(SiteID == sites))  %>%
-  #rename the date column so we can join these
+specCond_ions <- daily_spec_cond %>%
+  mutate(siteID = paste0('USGS-', site_no)) %>%
+  inner_join(focus_sites, by = join_by(siteID == sites)) %>%
   rename(date = Date) %>%
-  # join to the conc.daily dataset. We only want matching data here!
   inner_join(conc.daily)
-  
-
 ```
 
 ### Plot the correlation with sc on the x axis and individual ions on the y
 
 ```{r}
-
-ggplot(sc_ions, aes(x = SpecCond, y = conc, color = basin))+
+ggplot(specCond_ions, aes(x = SpecCond, y = conc, color = basin))+
   geom_point()+
   facet_wrap(~parameter, scales = "free")+
   ylab("Concentration of Ion (mg/L)") + 
   scale_x_log10() + 
   scale_y_log10()
-
 ```
 
 ### Use the `map` and modelling code to test for correlation with `lm`
 
 ```{r}
+sc_ion.nest <- specCond_ions %>%
+  group_by(parameter) %>%
+  # summarize(mean = mean(Annual_Mean_SpecCond)) %>%
+  nest() 
 
+head(sc_ion.nest)
 
+lm_mod <- function(x){
+  mod <- lm(x$conc ~ x$SpecCond) %>%
+    tidy()
+}
 
+lm.models <- sc_ion.nest %>%
+  mutate(mods=map(data, lm_mod)) %>% 
+  unnest(cols = mods) %>%
+  select(-data) 
+  # mutate(sites = paste0('USGS-', site_no)) %>%
+  # inner_join(focus_sites)
+
+head(lm.models)
 ```
 
 ### What Ions are correlated with SC? Why might this be?
 
+All of the ions are correlated with SC. This is because the specific
+conductivity measures the concentration of dissolved ions. More ions
+would result in higher SC values.
 
 ## Q3) How does discharge control these relationships?
 
 ### Free play.
 
-This section is meant to encourage you to play with the data, you definitely will need to download discharge data at our focus sites, but how you explore this question is up to you. What's the relationship between discharge and SC? Does this relationship alter the relationship between SC and Ions? Does a model with both SC AND discharge predict water quality concentrations better than SC alone? Just try one of these approaches and write out why you think this might be happening.
+This section is meant to encourage you to play with the data, you
+definitely will need to download discharge data at our focus sites, but
+how you explore this question is up to you. What's the relationship
+between discharge and SC? Does this relationship alter the relationship
+between SC and Ions? Does a model with both SC AND discharge predict
+water quality concentrations better than SC alone? Just try one of these
+approaches and write out why you think this might be happening.
 
+param code = 00060
+
+```{r}
+discharge <- readNWISdv(updated_sites, "00060", start, present) %>%  renameNWISColumns()
+names(discharge)
+
+sc_flow <- daily_spec_cond %>%
+  # mutate(siteID = paste0('USGS-', site_no)) %>%
+  inner_join(discharge, by = c('site_no', 'Date', "agency_cd"))
+
+ggplot(sc_flow, aes(x = SpecCond, y = Flow))+
+  geom_point()+
+  facet_wrap(~site_no, scales = "free")+
+  ylab("Flow") + 
+  scale_x_log10() + 
+  scale_y_log10()
+
+sc_flow.nest <- sc_flow %>%
+  group_by(site_no) %>%
+  # summarize(mean = mean(Annual_Mean_SpecCond)) %>%
+  nest() 
+
+head(sc_flow.nest)
+
+lm_mod_flow <- function(x){
+  mod <- lm(x$Flow ~ x$SpecCond) %>%
+    tidy()
+}
+
+lm.models_flow <- sc_flow.nest %>%
+  mutate(mods=map(data, lm_mod_flow)) %>% 
+  unnest(cols = mods) %>%
+  select(-data) 
+  # mutate(sites = paste0('USGS-', site_no)) %>%
+  # inner_join(focus_sites)
+
+head(lm.models_flow)
+
+```
+
+For each site, discharge (flow) and specific conductivity have a
+negative linear relationship. As sc increases flow decreases.
