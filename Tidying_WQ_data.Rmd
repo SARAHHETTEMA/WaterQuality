@@ -502,9 +502,33 @@ Salinity is primarily an issue during low flow periods so when we are looking fo
 trends we want to focus on the saltiest times of year, generally July-Oct. 
 
 ```{r}
-
 #Group_by, filter, and summarize will be key here. 
 
+sc_summers <- sc %>%
+  #add month columns
+  mutate(month = month(Date),
+         year = year(Date)) %>%
+  #filter to only those summer months
+  filter(month %in% c(7,8,9,10)) %>%
+  #group by sites and years to take site and year averages
+  group_by(site_no, year) %>%
+  # Take the mean, removing NAs and add a count of obs to make sure
+  # our summer annual mean represents a good amount of data
+  summarize(summer_sc = mean(SpecCond,na.rm = T),
+            count = n())
+
+
+
+## Add a visual check. 
+
+ggplot(sc_summers, aes(x = year, y = summer_sc,
+                       color = site_no)) + 
+  geom_point() + 
+  theme_few() + 
+  scale_color_few() + 
+  theme(legend.position = c(.2,.8))
+
+# What's wrong with this site? 
 ```
 
 ### Using the `map` code from above test if their are trends
@@ -514,46 +538,87 @@ test for trends in data from the `trend` package, which you will need to install
 
 ```{r}
 
+### Straight from Sam Struthers with MR modifications
+library(trend) # Library with sens.slope package
+
+#Custom sens slope function and output guidance
+my_sens <- function(df){
+  mod <- sens.slope(df$summer_sc)
+  
+    #Extract the things we want
+    #if there is a trend (p.value),
+    # what is the slope? 
+  tibble(slope = mod$estimates,
+         p_value = mod$p.value)
+}
+
+
+sc_results <- sc_summers %>%
+  group_by(site_no) %>%
+  #Bundle the data
+  nest() %>%
+  #Apply the model
+  mutate(mods=map(data,my_sens)) %>%
+  # Extract model results
+  unnest(cols = mods) %>%
+  #remove data
+  select(-data) %>%
+  #Join back to site names
+  #First need to add sites with USGS - in front
+  mutate(sites = paste0('USGS-',site_no)) %>%
+  inner_join(focus_sites)
+
+kable(sc_results)
+
+
 ```
 
 
 ## Q2) 2) What is the correlation between specific conductivity and individual ion concentration?
 
-
-### Join `conc.daily` to your specific conductance `sc` data
-
 ```{r}
 # Think about if you want a full join, inner join, left join, etc...
-```
 
+
+sc_ions <- sc %>%
+  ## Add a new siteid column so it matches conc.daily
+  mutate(SiteID = paste0('USGS-',site_no)) %>% 
+  inner_join(focus_sites, by = join_by(SiteID == sites))  %>%
+  #rename the date column so we can join these
+  rename(date = Date) %>%
+  # join to the conc.daily dataset. We only want matching data here!
+  inner_join(conc.daily)
+  
+
+```
 
 ### Plot the correlation with sc on the x axis and individual ions on the y
 
 ```{r}
 
-```
+ggplot(sc_ions, aes(x = SpecCond, y = conc, color = basin))+
+  geom_point()+
+  facet_wrap(~parameter, scales = "free")+
+  ylab("Concentration of Ion (mg/L)") + 
+  scale_x_log10() + 
+  scale_y_log10()
 
+```
 
 ### Use the `map` and modelling code to test for correlation with `lm`
 
 ```{r}
 
+
+
 ```
 
-### What Ions are correlated with SC? Why might this be? 
+### What Ions are correlated with SC? Why might this be?
 
 
-## Q3) How does discharge control these relationships? 
+## Q3) How does discharge control these relationships?
 
+### Free play.
 
-### Free play. 
-
-This section is meant to encourage you to play with the data, you definitely will
-need to download discharge data at our focus sites, but how you explore this
-question is up to you. What's the relationship between discharge and SC? Does this
-relationship alter the relationship between SC and Ions? Does a model with both SC
-AND discharge predict water quality concentrations better than SC alone? Just try 
-one of these approaches and write out why you think this might be happening. 
-
-
+This section is meant to encourage you to play with the data, you definitely will need to download discharge data at our focus sites, but how you explore this question is up to you. What's the relationship between discharge and SC? Does this relationship alter the relationship between SC and Ions? Does a model with both SC AND discharge predict water quality concentrations better than SC alone? Just try one of these approaches and write out why you think this might be happening.
 
